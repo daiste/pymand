@@ -1,4 +1,5 @@
 from flask import Flask, url_for, request, json, jsonify
+from requests.utils import quote
 import subprocess, sys, traceback, datetime
 
 app = Flask(__name__)
@@ -15,13 +16,21 @@ def api_get_and_print():
         printer = jsonRequest['printer']
         pdfUrl = jsonRequest['pdfUrl']
         jobName = '{:%y-%m-%d_%H:%M:%S.%f}'.format(datetime.datetime.now())[:-3]+"_"+jsonRequest['jobName'].replace(" ", "_")
-        print "printing on "+jsonRequest['printer']+" job "+jobName+": "+pdfUrl
+#        print "printing on "+jsonRequest['printer']+" job "+jobName+": "+pdfUrl
 
         lpResult = ''
         status = 500
         try:
+            safeUrl = quote(pdfUrl,safe="%/:=&?~#+!$,;'@()*[]")
+	        #baseEnd = pdfUrl.find("?")
+	        #print baseEnd
+	        #if baseEnd > 0:
+	        #	safeUrl = pdfUrl[:baseEnd+1]+quote(pdfUrl[baseEnd+1:],safe="%/:=&?~#+!$,;'@()*[]")
+	        #else:
+		    #safeUrl = pdfUrl
+            print "printing on "+jsonRequest['printer']+" job "+jobName+": "+safeUrl
             lpResult = subprocess.check_output(
-                "curl "+pdfUrl+"|lp -d "+printer+" -t "+jobName+"", 
+                "curl \""+safeUrl+"\"|lp -d "+printer+" -t "+jobName+"", 
                 stderr=subprocess.STDOUT,
                 shell=True)
             status = 200
