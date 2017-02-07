@@ -1,7 +1,11 @@
 from flask import Flask, url_for, request, json, jsonify
 from requests.utils import quote
 import subprocess, sys, traceback, datetime
+import uuid
 
+
+tmpDir = "/tmp/pymand.tmp/"
+saveTmpFile = True
 app = Flask(__name__)
 
 @app.route('/')
@@ -13,24 +17,36 @@ def api_get_and_print():
     if request.headers['Content-Type'] == 'application/json':
         jsonRequest = json.loads(request.data)
         
-        printer = jsonRequest['printer']
-        pdfUrl = jsonRequest['pdfUrl']
-        jobName = '{:%y-%m-%d_%H:%M:%S.%f}'.format(datetime.datetime.now())[:-3]+"_"+jsonRequest['jobName'].replace(" ", "_")
-#        print "printing on "+jsonRequest['printer']+" job "+jobName+": "+pdfUrl
+        try:
+            param = 'printer'
+            printer = jsonRequest[param]
+            param = 'pdfUrl'
+            pdfUrl = jsonRequest[param]
+            param = 'jobName'
+            jobName = jsonRequest[param]
+        except:
+            data = {
+                'response'  : 'missing parameter '+param
+            }
+            resp = jsonify(data)
+            resp.status_code = 418
+            return resp 
+            
+        
+        jobName = '{:%y-%m-%d_%H:%M:%S.%f}'.format(datetime.datetime.now())[:-3]+"-"+str(uuid.uuid4())[:8]+"_"+jobName.replace(" ", "_")
 
         lpResult = ''
         status = 500
         try:
-            safeUrl = quote(pdfUrl,safe="%/:=&?~#+!$,;'@()*[]")
-	        #baseEnd = pdfUrl.find("?")
-	        #print baseEnd
-	        #if baseEnd > 0:
-	        #	safeUrl = pdfUrl[:baseEnd+1]+quote(pdfUrl[baseEnd+1:],safe="%/:=&?~#+!$,;'@()*[]")
-	        #else:
-		    #safeUrl = pdfUrl
+            safeUrl = quote(pdfUrl,safe="%/:=&?~#+!$,;'@()*[]-")
+            if (saveTmpFile):
+                fileName = quote(jobName,safe="%/:=&?~#+!$,;'@()*[]-")+".pdf"
+                cmdUrl = "curl --create-dirs -o "+tmpDir+fileName+" \""+safeUrl+"\" && lp -d "+printer+" -t "+jobName+" "+tmpDir+fileName
+            else:
+                cmdUrl = "curl \""+safeUrl+"\"|lp -d "+printer+" -t "+jobName+""
             print "printing on "+jsonRequest['printer']+" job "+jobName+": "+safeUrl
             lpResult = subprocess.check_output(
-                "curl \""+safeUrl+"\"|lp -d "+printer+" -t "+jobName+"", 
+                cmdUrl, 
                 stderr=subprocess.STDOUT,
                 shell=True)
             status = 200
@@ -79,4 +95,4 @@ def printers():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', threaded=True)
