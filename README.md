@@ -13,3 +13,7 @@ http://blog.luisrei.com/articles/flaskrest.html
 
 
 #https://docs.python.org/2/library/subprocess.html#subprocess.call
+
+
+sudo pip install daemon
+sudo pip install spam
