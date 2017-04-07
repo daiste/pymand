@@ -44,9 +44,9 @@ def pymand():
                 safeUrl = quote(doc_url,safe="%/:=&?~#+!$,;'@()*[]-")
                 if save_tmp_file:
                     fileName = quote(jobName,safe="%/:=&?~#+!$,;'@()*[]-")+".pdf"
-                    cmdUrl = "curl --create-dirs -o "+tmpdir+fileName+" \""+safeUrl+"\" && lp -d "+printer+" -t "+jobName+" "+tmpdir+fileName
+                    cmdUrl = "curl -H 'Accept-Language: it' --create-dirs -o "+tmpdir+fileName+" \""+safeUrl+"\" && lp -d "+printer+" -t "+jobName+" "+tmpdir+fileName
                 else:
-                    cmdUrl = "curl \""+safeUrl+"\"|lp -d "+printer+" -t "+jobName+""
+                    cmdUrl = "curl -H 'Accept-Language: it' \""+safeUrl+"\"|lp -d "+printer+" -t "+jobName+""
                 print "printing on "+jsonRequest['printer']+" job "+jobName+": "+safeUrl
                 lpResult = subprocess.check_output(
                     cmdUrl, 
